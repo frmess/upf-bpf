@@ -19,7 +19,7 @@ item = defaultdict(dict)
 
 def create_udp_pkt_flow(size, ip_min, ip_max, nflows, field):
     print("{} flow will be generated...".format(nflows))
-    base_pkt = Ether()/IP(src="16.0.0.1", dst="10.1.3.27")/UDP(dport=1234)
+    base_pkt = Ether()/IP(src="16.0.0.1", dst="192.168.128.5")/UDP(dport=1234)
     pad = max(0, size - len(base_pkt)) * 'x'
     return STLPktBuilder(pkt=base_pkt/pad, vm=create_vm(ip_min, ip_max, nflows, field))
 
@@ -28,9 +28,9 @@ def create_udp_pkt_flow(size, ip_min, ip_max, nflows, field):
 
 def create_gtp_pkt_flow(size, ip_min, ip_max, nflows, field):
     print("{} flow will be generated...".format(nflows))
-    base_pkt = Ether()/IP(src="10.1.3.27", dst="192.168.15.12")/UDP(dport=2152) / \
+    base_pkt = Ether()/IP(src="192.168.128.5", dst="192.168.15.12")/UDP(dport=2152) / \
         GTP_U_Header(teid=100) / \
-        IP(src="10.10.10.10", dst="10.1.3.27", version=4)/UDP(dport=1234)
+        IP(src="10.10.10.10", dst="192.168.128.5", version=4)/UDP(dport=1234)
     pad = max(0, size - len(base_pkt)) * 'x'
     return STLPktBuilder(pkt=base_pkt/pad, vm=create_vm(ip_min, ip_max, nflows, field))
 
@@ -53,7 +53,7 @@ def create_vm(ip_min, ip_max, nflows, field):
 def create_pkt(size):
     # simple packet creation
     print("Only one flow will be generated...")
-    pkt = Ether()/IP(src="10.1.2.27", dst="10.1.3.27")/UDP(dport=1234)
+    pkt = Ether()/IP(src="192.168.128.5", dst="192.168.128.5")/UDP(dport=1234)
     pad = max(0, size - len(pkt)) * 'x'
     return STLPktBuilder(pkt=pkt/pad)
 

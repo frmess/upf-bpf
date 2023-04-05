@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     json jResponse;
     res.status = Controller::setup(jRequest, jResponse);
     res.set_content("{\"teste\": \"Hello World!\"s}", "application/json");
+    //res.set_content("{\"ok 200\": \"Interfaces have been configured!\"s}", "application/json");
   });
 
   svr.Post("/createSession", [](const Request &req, Response &res) {
@@ -41,6 +42,7 @@ int main(int argc, char *argv[])
     json jResponse;
     res.status = Controller::createSesssion(jRequest, jResponse);
     res.set_content("{\"teste\": \"Hello World!\"s}", "application/json");
+    //res.set_content("{\"ok 200\": \"PDU Session has been created!\"s}", "application/json");
   });
 
   svr.listen(pAddress, port);

@@ -65,7 +65,7 @@ void SessionManager::createBPFSession(std::shared_ptr<pfcp::pfcp_session> pSessi
   }
   LOG_DBG("PDI extracted from PDR {}", pdrHighPriority->pdr_id.rule_id);
 
-  // pUPFProgram->getNextProgRuleMap()->update(&next_rule_prog_index_key)
+  //pUPFProgram->getNextProgRuleMap()->update(&next_rule_prog_index_key);
   LOG_DBG("Extract FAR from the highest priority PDR");
   std::shared_ptr<pfcp::pfcp_far> pFar;
   pfcp::far_id_t farId;

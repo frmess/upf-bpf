@@ -19,9 +19,10 @@
 #include <utils/utils.h>
 #include <far_maps.h>
 
-#ifndef LOCAL_IP
-// 10.1.3.30
-#define LOCAL_IP 503513354
+#ifndef GNODEB_IP
+// 192.168.60.5 => 3232250884
+//1.60.168.192 => 20752576
+#define GNODEB_IP 20752576
 #endif
 #ifndef LOCAL_MAC
 #define LOCAL_MAC 0
@@ -64,6 +65,10 @@ static u32 create_outer_header_gtpu_ipv4(struct xdp_md *p_ctx, pfcp_far_t_ *p_fa
   bpf_debug("create_outer_header_gtpu_ipv4");
   struct ethhdr *p_eth;
   struct iphdr *p_ip;
+
+  __builtin_memset(&p_eth, 0, sizeof(struct ethhdr));
+  __builtin_memset(&p_ip, 0, sizeof(struct iphdr));
+
   void *p_data = (void *)(long)p_ctx->data;
   void *p_data_end = (void *)(long)p_ctx->data_end;
   void *p_mac_address;
@@ -114,8 +119,19 @@ static u32 create_outer_header_gtpu_ipv4(struct xdp_md *p_ctx, pfcp_far_t_ *p_fa
   p_ip->ttl = 64;
   p_ip->protocol = IPPROTO_UDP;
   p_ip->check = 0;
-  p_ip->saddr = LOCAL_IP;
+  
+  /**/
+  /**/
+  //p_ip->saddr = LOCAL_IP;
+  //p_ip->daddr = p_far->forwarding_parameters.outer_header_creation.ipv4_address.s_addr;
+  u32 daddr = p_far->forwarding_parameters.outer_header_creation.ipv4_address.s_addr;
+  p_ip->saddr = GNODEB_IP;
+  //p_ip->daddr = (((daddr<<24) & 0xff000000) | ((daddr<<8) & 0x00ff0000) | ((daddr>>24) & 0x000000ff) | ((daddr>>8) & 0x0000ff00));
   p_ip->daddr = p_far->forwarding_parameters.outer_header_creation.ipv4_address.s_addr;
+  /**/
+  /**/
+  
+  bpf_debug("Franck p_ip->daddr = %d\n", p_ip->daddr);
 
   // Add the UDP header
   struct udphdr *p_udp = (void *)(p_ip + 1);

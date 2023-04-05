@@ -8,7 +8,7 @@ import json
 def create_pkt(src):
 
     return STLPktBuilder(
-        pkt=Ether()/IP(src=src, dst="10.1.3.27") /
+        pkt=Ether()/IP(src=src, dst="192.168.128.5") /
         UDP(dport=1234)/Raw('x'*20)
     )
 

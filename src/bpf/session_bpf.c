@@ -18,9 +18,10 @@
 #include <utils/logger.h>
 #include <utils/utils.h>
 
-#ifndef LOCAL_IP
-// 10.1.3.30
-#define LOCAL_IP 503513354
+#ifndef GNODEB_IP
+// 192.168.60.5 => 3232250884
+//1.60.168.192 => 20752576
+#define GNODEB_IP 20752576
 #endif
 #ifndef LOCAL_MAC
 #define LOCAL_MAC 0
@@ -49,7 +50,6 @@ static u32 update_dst_mac_address(struct iphdr *p_ip, struct ethhdr *p_eth)
 {
   void *p_mac_address;
 
-  // Check if the destination IP address is in the ARP table.
   p_mac_address = bpf_map_lookup_elem(&m_arp_table, &p_ip->daddr);
   if(!p_mac_address) {
     bpf_debug("mac not found!!\n");
@@ -63,7 +63,9 @@ static u32 create_outer_header_gtpu_ipv4(struct xdp_md *p_ctx, pfcp_far_t_ *p_fa
 {
   bpf_debug("create_outer_header_gtpu_ipv4");
   struct ethhdr *p_eth;
+  __builtin_memset(&p_eth, 0, sizeof(struct ethhdr));
   struct iphdr *p_ip;
+  __builtin_memset(&p_ip, 0, sizeof(struct iphdr));
   void *p_data = (void *)(long)p_ctx->data;
   void *p_data_end = (void *)(long)p_ctx->data_end;
   void *p_mac_address;
@@ -130,9 +132,11 @@ static u32 create_outer_header_gtpu_ipv4(struct xdp_md *p_ctx, pfcp_far_t_ *p_fa
 
   bpf_debug("Destination MAC:%x:%x:%x\n", p_eth->h_dest[0], p_eth->h_dest[1], p_eth->h_dest[2]);
   bpf_debug("Destination MAC:%x:%x:%x\n", p_eth->h_dest[3], p_eth->h_dest[4], p_eth->h_dest[5]);
+
   p_mac_address = bpf_map_lookup_elem(&m_arp_table, &p_ip->daddr);
+  
   if(!p_mac_address) {
-    bpf_debug("mac not found!!\n");
+    bpf_debug("Franck mac not found!!\n");
     return XDP_DROP;
   }
   // swap_src_dst_mac(p_data);
@@ -204,36 +208,26 @@ static u32 pfcp_far_apply(struct xdp_md *p_ctx, pfcp_far_t_ *p_far, enum FlowDir
       switch(outer_header_creation) {
       case OUTER_HEADER_CREATION_UDP_IPV4:
         bpf_debug("OUTER_HEADER_CREATION_UDP_IPV4\n");
-        // The packet is composed by the following headers:
-        // - eth, ip, udp, gtpu, ip, udp, payload
-        // We need to keep just the inner ip and udp headers.
-        // So, we need to remove the total bytes related to the ip, udp and gtpu headers.
-        // In the end, the new packet will be composed by the following headers:
-        // - eth (new), ip, udp, payload.
         struct ethhdr *p_new_eth = p_data + GTP_ENCAPSULATED_SIZE;
 
-        // Check if the new eth pointer is valid.
+        // Move eth header forward.
         if((void *)(p_new_eth + 1) > p_data_end) {
           return 1;
         }
         __builtin_memcpy(p_new_eth, p_eth, sizeof(*p_eth));
 
-        // Get the inner ip header.
+        // Update destination mac address.
         struct iphdr *p_ip = (void *)(p_new_eth + 1);
 
-        // Check if the ip pointer is valid.
         if((void *)(p_ip + 1) > p_data_end) {
           return XDP_DROP;
         }
 
-        // Update the destination mac address of the new eth header.
         if(update_dst_mac_address(p_ip, p_new_eth)) {
           return XDP_DROP;
         }
 
-        // TODO: Update UDP port number according to the FAR.
-
-        // Shrinks the packet by GTP_ENCAPSULATED_SIZE bytes.
+        // Adjust head to the right.
         bpf_xdp_adjust_head(p_ctx, GTP_ENCAPSULATED_SIZE);
 
         return bpf_redirect_map(&m_redirect_interfaces, direction, 0);
@@ -247,7 +241,7 @@ static u32 pfcp_far_apply(struct xdp_md *p_ctx, pfcp_far_t_ *p_far, enum FlowDir
         bpf_debug("In destination to CORE - Invalid option: %d", outer_header_creation);
       }
     } else if(dest_interface == INTERFACE_VALUE_ACCESS) {
-      // Redirect to core network.
+      // Redirect to access network.
       bpf_debug("Destination is to INTERFACE_VALUE_ACCESS");
       switch(outer_header_creation) {
       case OUTER_HEADER_CREATION_GTPU_UDP_IPV4:
@@ -289,8 +283,7 @@ static u32 pfcp_pdr_match_pdi_access(struct xdp_md *p_ctx, pfcp_pdr_t_ *p_pdr, s
   if(p_pdr->outer_header_removal.outer_header_removal_description != OUTER_HEADER_REMOVAL_GTPU_UDP_IPV4
       || p_pdr->pdi.source_interface.interface_value != INTERFACE_VALUE_ACCESS
       || p_pdr->pdi.fteid.teid != teid
-      // FIXME navarrothiago
-      // || p_pdr->pdi.ue_ip_address.ipv4_address != p_iph->saddr
+      || p_pdr->pdi.ue_ip_address.ipv4_address != p_iph->saddr
     ){
         bpf_debug("Not match:");
         bpf_debug("OHRD: %d", OUTER_HEADER_REMOVAL_GTPU_UDP_IPV4 );

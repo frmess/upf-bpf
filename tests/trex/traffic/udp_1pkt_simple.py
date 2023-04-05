@@ -7,7 +7,7 @@ class STLS1(object):
         return STLStream(
             packet =
                     STLPktBuilder(
-                        pkt = Ether()/IP(src="10.1.2.27",dst="10.1.3.27")/
+                        pkt = Ether()/IP(src="192.168.128.5",dst="10.10.10.10")/
                                 UDP(dport=1234)/Raw('x'*20)
                     ),
             mode = STLTXCont())
@@ -20,6 +20,5 @@ class STLS1(object):
 # dynamic load - used for trex console or simulator
 def register():
     return STLS1()
-
 
 

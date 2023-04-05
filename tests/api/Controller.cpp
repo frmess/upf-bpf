@@ -106,9 +106,14 @@ int Controller::createSesssion(json &jRequest, json &jResponse)
     }
 
     auto ip = static_cast<uint32_t>(ip_addr.s_addr);
+    /**/
+    /**/
+    //u32 ip_ad = (((ip<<24) & 0xff000000) | ((ip<<8) & 0x00ff0000) | ((ip>>24) & 0x000000ff) | ((ip>>8) & 0x0000ff00));
+
     // auto pMacAddress = Util::getInstance().stringToMac(element["mac"]).data();
     auto pMacAddress = ether_aton(std::string(element["mac"]).c_str());
     // pSessionProgram->getArpTableMap()->update(ip, pMacAddress->ether_addr_octet, BPF_ANY);
+    //  pSessionPrograms->getFARProgram()->getArpTableMap()->update(ip_ad, pMacAddress->ether_addr_octet, BPF_ANY);
     pSessionPrograms->getFARProgram()->getArpTableMap()->update(ip, pMacAddress->ether_addr_octet, BPF_ANY);
   }
   return 200;

@@ -13,10 +13,30 @@
 #include <utils/LogDefines.h>
 #include <wrappers/BPFMap.hpp>
 
+/**/
+/**/
+#include <arpa/inet.h>
+/**/
+/**/
+
 #define EMPTY_SLOT -1l
 
 //  TODO navarrothiago - encapsulate in order file.
 // Custom format for next_rule_prog_index_key.
+
+/**/
+/**/
+u32 litToBigEndian(u32 x) {
+  return (((x<<24) & 0xff000000) | ((x<<8) & 0x00ff0000) | ((x>>24) & 0x000000ff) | ((x>>8) & 0x0000ff00));
+};
+
+u32 bigToLitEndian(u32 x) {
+  return (((x>>24) & 0x000000ff) | ((x>>8) & 0x0000ff00) | ((x<<8) & 0x00ff0000) | ((x<<24) & 0xff000000));
+};
+
+
+/**/
+/**/
 
 std::ostream &operator<<(std::ostream &Str, struct next_rule_prog_index_key const &v)
 {
@@ -47,10 +67,28 @@ void SessionProgramManager::createPipeline(uint32_t seid, uint32_t teid, uint8_t
                                    std::shared_ptr<pfcp::pfcp_far> pFar)
 {
   LOG_FUNC();
-  struct next_rule_prog_index_key key = {.teid = teid, .source_value = sourceInterface, .ipv4_address = ueIpAddress};
+
+  /**/
+  /**/
+  struct next_rule_prog_index_key key;
+  __builtin_memset(&key, 0, sizeof(struct next_rule_prog_index_key));
+  //struct next_rule_prog_index_key key = {.teid = teid, .source_value = sourceInterface, .ipv4_address = ueIpAddress};
+  key = {.teid = litToBigEndian(teid), .source_value = sourceInterface, .ipv4_address = litToBigEndian(ueIpAddress)};
+  /**/
+  /**/
+
   u32 id;
   s32 fd;
+  
+  /**/
+  /**/
+  struct in_addr ip_addr;
+  ip_addr.s_addr = ueIpAddress;
   LOG_DBG("teid: {}, source interface: {}, ue ip: {}", teid, sourceInterface, ueIpAddress);
+  LOG_DBG("teid: {}, source interface: {}, ue ip: {}", htonl(teid), sourceInterface, inet_ntoa(ip_addr));
+  LOG_DBG("map key teid:{}, source: {}, ip: {} \n", key.teid, key.source_value, key.ipv4_address);
+  /**/
+  /**/
 
   LOG_DBG("Instantiate a new FARProgram");
   // Instantiate a new FARProgram
